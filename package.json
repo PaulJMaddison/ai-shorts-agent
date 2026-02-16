@@ -15,12 +15,14 @@
     "start": "node dist/cli/index.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "webhooks": "tsx src/cli/index.ts webhooks --port 8080"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
     "zod": "^3.23.8",
     "commander": "file:vendor/commander"
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.7.6",
