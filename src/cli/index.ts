@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { readFile } from 'node:fs/promises';
 
+import { addClientToFile, type ScriptTone } from './clientAdd.js';
 import { env } from '../config/env.js';
 import { ensureDefaultClientsFile, loadClients, type ClientProfile } from '../config/clients.js';
 import { createProviders } from '../providers/factory.js';
@@ -20,6 +21,13 @@ type PrivacyStatus = 'public' | 'unlisted' | 'private';
 interface RunOptions {
   topic?: string;
   privacy?: PrivacyStatus;
+}
+
+interface ClientAddOptions {
+  id: string;
+  name: string;
+  niche: string;
+  tone?: ScriptTone;
 }
 
 type RuntimeClient = ClientProfile & {
@@ -291,6 +299,31 @@ async function webhooksCommand(port: string): Promise<void> {
   await startWebhooksServer(parsedPort);
 }
 
+async function clientAddCommand(options: ClientAddOptions): Promise<void> {
+  const allowedTones: ScriptTone[] = ['educational', 'casual', 'professional'];
+
+  if (options.tone && !allowedTones.includes(options.tone)) {
+    throw new Error('Invalid --tone value. Expected educational|casual|professional.');
+  }
+
+  const client = await addClientToFile(CLIENTS_FILE, options);
+
+  console.log(
+    JSON.stringify(
+      {
+        message: 'Client added.',
+        id: client.id,
+        name: client.name,
+        niche: client.niche,
+        tone: client.tone,
+        topicBankSize: client.topicBank.length
+      },
+      null,
+      2
+    )
+  );
+}
+
 async function main(): Promise<void> {
   const program = new Command();
 
@@ -299,6 +332,17 @@ async function main(): Promise<void> {
   program.command('clients').description('List clients.').action(async () => {
     await listClientsCommand();
   });
+
+  program
+    .command('client:add')
+    .description('Add a client profile with stub providers and starter topics.')
+    .requiredOption('--id <id>', 'Client id')
+    .requiredOption('--name <displayName>', 'Client display name')
+    .requiredOption('--niche <niche>', 'Client niche keyword')
+    .option('--tone <tone>', 'educational|casual|professional')
+    .action(async (options: ClientAddOptions) => {
+      await clientAddCommand(options);
+    });
 
   program
     .command('run')
