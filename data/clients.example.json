@@ -1,0 +1,38 @@
+[
+  {
+    "id": "tech_en_gb_stub",
+    "name": "Tech UK Stub Channel",
+    "niche": "technology",
+    "topics": ["ai tools", "developer productivity", "startup launches"],
+    "voice": {
+      "provider": "stub",
+      "voiceId": "stub_voice_en_gb_tech"
+    },
+    "avatar": {
+      "provider": "stub",
+      "avatarId": "stub_avatar_tech_host"
+    },
+    "youtube": {
+      "provider": "stub",
+      "channelId": "stub_tech_channel"
+    }
+  },
+  {
+    "id": "finance_en_gb_stub",
+    "name": "Finance UK Stub Channel",
+    "niche": "personal finance",
+    "topics": ["budgeting", "investing basics", "market explainers"],
+    "voice": {
+      "provider": "stub",
+      "voiceId": "stub_voice_en_gb_finance"
+    },
+    "avatar": {
+      "provider": "stub",
+      "avatarId": "stub_avatar_finance_host"
+    },
+    "youtube": {
+      "provider": "stub",
+      "channelId": "stub_finance_channel"
+    }
+  }
+]

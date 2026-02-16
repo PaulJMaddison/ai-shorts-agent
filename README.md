@@ -20,6 +20,26 @@ cp .env.example .env
 pnpm dev
 ```
 
+## Client profiles (`clients.json`)
+
+Client profiles are loaded from `CLIENTS_FILE` (default: `./data/clients.json`) and must be a JSON array of objects in this shape:
+
+- `id`: unique client identifier
+- `name`: display name
+- `niche`: content niche
+- `topics`: non-empty list of content topics
+- `voice`: `{ provider, voiceId }`
+- `avatar`: `{ provider, avatarId }`
+- `youtube`: `{ provider, channelId }`
+
+Quick start:
+
+```bash
+cp data/clients.example.json data/clients.json
+```
+
+If `clients.json` is missing, the app can create a default file with one stub client via `ensureDefaultClientsFile` in `src/config/clients.ts`.
+
 ## Scripts
 
 - `pnpm dev` – watch mode CLI runner (`tsx watch src/cli/index.ts`)
