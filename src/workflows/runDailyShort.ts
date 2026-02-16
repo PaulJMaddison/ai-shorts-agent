@@ -5,7 +5,9 @@ import type { AudioAsset, ClientProfile, RenderJob, Script, UploadResult, VideoA
 import { env } from '../config/env.js';
 import { appendMetric } from '../storage/metricsStore.js';
 import { writeRunLog } from '../storage/runStore.js';
+import { retry } from '../utils/retry.js';
 import { logInfo } from '../utils/logger.js';
+import { fixupScript, validateScript } from './qualityGates.js';
 
 type PrivacyStatus = 'public' | 'unlisted' | 'private';
 
@@ -88,17 +90,38 @@ export async function runDailyShort(input: {
       topic: runContext.topic
     });
 
+    const scriptValidation = validateScript(runContext.script);
+    if (!scriptValidation.ok) {
+      runContext.script = fixupScript(runContext.script, scriptValidation.issues);
+    }
+
     logInfo(`Synthesizing voice for client=${client.id}`);
-    runContext.audio = await providers.voice.synthesize({
-      client,
-      script: runContext.script
-    });
+    runContext.audio = await retry(
+      () =>
+        providers.voice.synthesize({
+          client,
+          script: runContext.script as Script
+        }),
+      {
+        tries: 3,
+        minDelayMs: 250,
+        maxDelayMs: 2_000
+      }
+    );
 
     logInfo(`Submitting render job for client=${client.id}`);
-    runContext.job = await providers.renderer.render({
-      client,
-      audio: runContext.audio,
-      script: runContext.script
+    runContext.job = await retry(
+      () =>
+        providers.renderer.render({
+          client,
+          audio: runContext.audio as AudioAsset,
+          script: runContext.script as Script
+        }),
+      {
+        tries: 2,
+        minDelayMs: 500,
+        maxDelayMs: 2_000
+      }
     });
 
     if (jobStore.save) {
@@ -129,15 +152,24 @@ export async function runDailyShort(input: {
       topic: runContext.topic
     });
 
-    runContext.upload = await providers.uploader.uploadShort({
-      client,
-      video: runContext.video,
-      script: runContext.script,
-      opts: {
-        privacyStatus: privacyOverride ?? client.youtube?.defaultPrivacyStatus ?? 'private',
-        madeForKids: client.youtube?.madeForKids ?? false
+    runContext.upload = await retry(
+      () =>
+        providers.uploader.uploadShort({
+          client,
+          video: runContext.video as VideoAsset,
+          script: runContext.script as Script,
+          opts: {
+            privacyStatus: privacyOverride ?? client.youtube?.defaultPrivacyStatus ?? 'private',
+            madeForKids: client.youtube?.madeForKids ?? false
+          }
+        }),
+      {
+        tries: 2,
+        minDelayMs: 500,
+        maxDelayMs: 2_000,
+        shouldRetry: (error) => !isQuotaExceededError(error)
       }
-    });
+    );
 
     const finishedAt = new Date().toISOString();
 
@@ -220,7 +252,7 @@ async function pollForCompletedJob(input: {
   jobId: string;
   jobStore: JobStoreLike;
 }): Promise<RenderJob> {
-  const timeoutMs = 120_000;
+  const timeoutMs = Math.max(120_000, env.STUB_RENDER_MS * 3);
   const pollIntervalMs = 1_000;
   const startedAtMs = Date.now();
 
@@ -293,4 +325,12 @@ function getDayOfYear(date: Date): number {
 
 async function sleep(durationMs: number): Promise<void> {
   await delay(durationMs);
+}
+
+function isQuotaExceededError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return /quota exceeded/i.test(error.message);
 }
