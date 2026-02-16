@@ -1,9 +1,10 @@
-import { mkdir, writeFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
-import path from 'node:path';
 
 import type { Providers } from '../core/interfaces.js';
 import type { AudioAsset, ClientProfile, RenderJob, Script, UploadResult, VideoAsset } from '../core/types.js';
+import { env } from '../config/env.js';
+import { appendMetric } from '../storage/metricsStore.js';
+import { writeRunLog } from '../storage/runStore.js';
 import { logInfo } from '../utils/logger.js';
 
 type PrivacyStatus = 'public' | 'unlisted' | 'private';
@@ -52,10 +53,13 @@ export async function runDailyShort(input: {
   jobStore: JobStoreLike;
   topicOverride?: string;
   privacyOverride?: PrivacyStatus;
+  dataDir?: string;
 }): Promise<DailyRunResult> {
   const { client, providers, jobStore, topicOverride, privacyOverride } = input;
+  const dataDir = input.dataDir ?? env.DATA_DIR;
 
   const startedAt = new Date().toISOString();
+  const runId = startedAt.replace(/:/g, '-').replace(/\..+$/, '');
   const timezone = client.schedule?.timezone ?? 'UTC';
   const todayInTimezone = getTodayInTimezone(timezone);
 
@@ -66,6 +70,14 @@ export async function runDailyShort(input: {
   };
 
   logInfo(`runDailyShort started for client=${client.id} startedAt=${startedAt}`);
+
+  await appendMetric(dataDir, {
+    event: 'run_started',
+    timestamp: startedAt,
+    clientId: client.id,
+    runId,
+    topic: runContext.topic
+  });
 
   try {
     logInfo(`Selecting topic for client=${client.id} timezone=${timezone}`);
@@ -108,6 +120,15 @@ export async function runDailyShort(input: {
     });
 
     logInfo(`Uploading short for client=${client.id}`);
+
+    await appendMetric(dataDir, {
+      event: 'upload_attempted',
+      timestamp: new Date().toISOString(),
+      clientId: client.id,
+      runId,
+      topic: runContext.topic
+    });
+
     runContext.upload = await providers.uploader.uploadShort({
       client,
       video: runContext.video,
@@ -127,7 +148,23 @@ export async function runDailyShort(input: {
       runLogPath: ''
     };
 
-    result.runLogPath = await writeRunLog(result);
+    const durationMs = Date.parse(finishedAt) - Date.parse(startedAt);
+
+    result.runLogPath = await writeRunLog(dataDir, client.id, {
+      ...result,
+      runId,
+      timestamp: finishedAt,
+      durationMs
+    });
+
+    await appendMetric(dataDir, {
+      event: 'run_completed',
+      timestamp: finishedAt,
+      clientId: client.id,
+      runId,
+      topic: runContext.topic,
+      durationMs
+    });
 
     logInfo(`runDailyShort completed for client=${client.id} finishedAt=${finishedAt}`);
 
@@ -146,9 +183,26 @@ export async function runDailyShort(input: {
       runLogPath: ''
     };
 
-    failedResult.runLogPath = await writeRunLog(failedResult);
-
     const errorMessage = failedResult.error?.message ?? 'Unknown error';
+    const durationMs = Date.parse(finishedAt) - Date.parse(startedAt);
+
+    failedResult.runLogPath = await writeRunLog(dataDir, client.id, {
+      ...failedResult,
+      runId,
+      timestamp: finishedAt,
+      durationMs
+    });
+
+    await appendMetric(dataDir, {
+      event: 'run_failed',
+      timestamp: finishedAt,
+      clientId: client.id,
+      runId,
+      topic: runContext.topic,
+      durationMs,
+      error: errorMessage
+    });
+
     logInfo(
       `runDailyShort failed for client=${client.id} finishedAt=${finishedAt} error="${errorMessage}"`
     );
@@ -235,28 +289,6 @@ function getDayOfYear(date: Date): number {
   const currentDay = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 
   return Math.floor((currentDay - yearStart) / 86_400_000) + 1;
-}
-
-function getRunLogPath(clientId: string, startedAt: string): string {
-  const safeTimestamp = startedAt.replace(/:/g, '-').replace(/\..+$/, '');
-
-  return path.resolve(
-    process.cwd(),
-    'data',
-    'clients',
-    clientId,
-    'runs',
-    `run_${safeTimestamp}.json`
-  );
-}
-
-async function writeRunLog(result: DailyRunResult): Promise<string> {
-  const runLogPath = getRunLogPath(result.clientId, result.startedAt);
-
-  await mkdir(path.dirname(runLogPath), { recursive: true });
-  await writeFile(runLogPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
-
-  return runLogPath;
 }
 
 async function sleep(durationMs: number): Promise<void> {
