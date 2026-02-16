@@ -8,9 +8,15 @@ import type { AudioAsset, ClientProfile, RenderJob, Script, VideoAsset } from '.
 import { jobStore } from '../../storage/index.js';
 import { getVideoDir } from '../../utils/paths.js';
 
-const COMPLETION_DELAY_MS = 5_000;
+const DEFAULT_COMPLETION_DELAY_MS = 5_000;
+
 
 export class StubAvatarRenderer implements AvatarRenderer {
+  private readonly completionDelayMs: number;
+
+  constructor() {
+    this.completionDelayMs = env.STUB_RENDER_MS ?? DEFAULT_COMPLETION_DELAY_MS;
+  }
   async render(input: {
     client: ClientProfile;
     audio: AudioAsset;
@@ -36,7 +42,7 @@ export class StubAvatarRenderer implements AvatarRenderer {
 
     if (
       job.status !== 'completed' &&
-      Date.now() - Date.parse(job.createdAt) >= COMPLETION_DELAY_MS
+      Date.now() - Date.parse(job.createdAt) >= this.completionDelayMs
     ) {
       const completedJob: RenderJob = {
         ...job,
