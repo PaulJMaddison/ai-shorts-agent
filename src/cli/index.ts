@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { env } from '../config/env.js';
 import { ensureDefaultClientsFile, loadClients, type ClientProfile } from '../config/clients.js';
 import { createProviders } from '../providers/factory.js';
+import { startWebhooksServer } from '../server/webhooks.js';
 import { jobStore } from '../storage/index.js';
 
 const CLIENTS_FILE = env.CLIENTS_FILE;
@@ -167,41 +168,6 @@ async function scheduleCommand(options: Omit<RunOptions, 'topic'>): Promise<void
       await runAllCommand(options);
     } catch (error) {
       console.error('Scheduled run failed:', error);
-import { runAgent } from '../core/app.js';
-import { startWebhooksServer } from '../server/webhooks.js';
-
-function getPortArg(): number {
-  const portArgIndex = process.argv.indexOf('--port');
-
-  if (portArgIndex === -1) {
-    return 8080;
-  }
-
-  const candidatePort = Number(process.argv[portArgIndex + 1]);
-
-  if (!Number.isInteger(candidatePort) || candidatePort <= 0) {
-    throw new Error('Invalid --port value. Expected a positive integer.');
-  }
-
-  return candidatePort;
-}
-
-async function main(): Promise<void> {
-  const command = process.argv[2] ?? 'run';
-
-  switch (command) {
-    case 'run': {
-      console.log(runAgent());
-      break;
-    }
-    case 'webhooks': {
-      const port = getPortArg();
-      await startWebhooksServer(port);
-      break;
-    }
-    default: {
-      console.error(`Unknown command: ${command}`);
-      process.exitCode = 1;
     }
   };
 
@@ -239,6 +205,16 @@ async function jobCommand(jobId: string): Promise<void> {
   }
 
   console.log(JSON.stringify(job, null, 2));
+}
+
+async function webhooksCommand(port: string): Promise<void> {
+  const parsedPort = Number.parseInt(port, 10);
+
+  if (!Number.isInteger(parsedPort) || parsedPort <= 0) {
+    throw new Error('Invalid --port value. Expected a positive integer.');
+  }
+
+  await startWebhooksServer(parsedPort);
 }
 
 async function main(): Promise<void> {
@@ -291,6 +267,14 @@ async function main(): Promise<void> {
   program.command('job <jobId>').description('Get one job by id.').action(async (jobId: string) => {
     await jobCommand(jobId);
   });
+
+  program
+    .command('webhooks')
+    .description('Start webhook listener server.')
+    .option('--port <number>', 'Port to listen on', '8080')
+    .action(async (options: { port: string }) => {
+      await webhooksCommand(options.port);
+    });
 
   await program.parseAsync(process.argv);
 }
