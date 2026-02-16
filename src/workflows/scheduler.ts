@@ -1,6 +1,8 @@
 import cron from 'node-cron'
 
+import { env } from '../config/env.js'
 import type { Providers } from '../core/interfaces.js'
+import { appendMetric } from '../storage/metricsStore.js'
 import { logInfo } from '../utils/logger.js'
 
 interface ClientSchedule {
@@ -14,70 +16,86 @@ export interface SchedulerClient {
   schedule: ClientSchedule
 }
 
-interface StartSchedulerInput<TClient extends SchedulerClient> {
+interface SchedulerRunInput<TClient extends SchedulerClient> {
   clients: TClient[]
   getProvidersForClient: (client: TClient) => Providers
   jobStore: unknown
 }
 
-type ScheduledRunContext<TClient extends SchedulerClient> = {
-  clients: TClient[]
-  getProvidersForClient: (client: TClient) => Providers
-  jobStore: unknown
+interface RunAllNowOptions {
+  dataDir?: string
 }
 
-let runAllNowImpl: (() => Promise<void>) | undefined
+const runningLocks = new Map<string, boolean>()
+
+async function appendWarningMetric(clientId: string, event: 'scheduler_skipped_locked' | 'scheduler_skipped_quota', dataDir?: string): Promise<void> {
+  try {
+    await appendMetric(dataDir ?? env.DATA_DIR, {
+      event,
+      timestamp: new Date().toISOString(),
+      clientId
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[warn] scheduler metric_failed client=${clientId} event=${event} error=${message}`)
+  }
+}
 
 async function runClient<TClient extends SchedulerClient>(
   client: TClient,
   getProvidersForClient: (value: TClient) => Providers,
-  _jobStore: unknown
+  _jobStore: unknown,
+  opts?: RunAllNowOptions
 ): Promise<void> {
+  if (runningLocks.get(client.id)) {
+    console.warn(`[warn] scheduler skipped client=${client.id} reason=already_running`)
+    await appendWarningMetric(client.id, 'scheduler_skipped_locked', opts?.dataDir)
+    return
+  }
+
+  if (client.schedule.maxPerDay <= 0) {
+    console.warn(`[warn] scheduler skipped client=${client.id} reason=quota_exhausted maxPerDay=${client.schedule.maxPerDay}`)
+    await appendWarningMetric(client.id, 'scheduler_skipped_quota', opts?.dataDir)
+    return
+  }
+
+  runningLocks.set(client.id, true)
   logInfo(`scheduler start client=${client.id}`)
 
   try {
     getProvidersForClient(client)
-
-    const runsToExecute = Math.min(Math.max(client.schedule.maxPerDay, 0), 1)
-
-    for (let runIndex = 0; runIndex < runsToExecute; runIndex += 1) {
-      logInfo(`scheduler run ${runIndex + 1}/${runsToExecute} client=${client.id}`)
-    }
-
+    logInfo(`scheduler run 1/1 client=${client.id}`)
     logInfo(`scheduler end client=${client.id}`)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
 
     console.error(`[error] scheduler client=${client.id} ${message}`)
+  } finally {
+    runningLocks.set(client.id, false)
   }
 }
 
-async function runAll<TClient extends SchedulerClient>(context: ScheduledRunContext<TClient>): Promise<void> {
-  for (const client of context.clients) {
-    await runClient(client, context.getProvidersForClient, context.jobStore)
+export async function runAllNow<TClient extends SchedulerClient>(
+  input: SchedulerRunInput<TClient>,
+  opts?: RunAllNowOptions
+): Promise<void> {
+  for (const client of input.clients) {
+    await runClient(client, input.getProvidersForClient, input.jobStore, opts)
   }
 }
 
-export function startScheduler<TClient extends SchedulerClient>({
-  clients,
-  getProvidersForClient,
-  jobStore
-}: StartSchedulerInput<TClient>): { stop: () => void } {
-  const tasks = clients.map((client) =>
+export function startScheduler<TClient extends SchedulerClient>(input: SchedulerRunInput<TClient>): { stop: () => void } {
+  const tasks = input.clients.map((client) =>
     cron.schedule(
       client.schedule.runDailyAt,
       async () => {
-        await runClient(client, getProvidersForClient, jobStore)
+        await runClient(client, input.getProvidersForClient, input.jobStore)
       },
       {
         timezone: client.schedule.timezone
       }
     )
   )
-
-  runAllNowImpl = async () => {
-    await runAll({ clients, getProvidersForClient, jobStore })
-  }
 
   return {
     stop: () => {
@@ -86,12 +104,4 @@ export function startScheduler<TClient extends SchedulerClient>({
       }
     }
   }
-}
-
-export async function runAllNow(): Promise<void> {
-  if (!runAllNowImpl) {
-    throw new Error('Scheduler has not been started. Call startScheduler first.')
-  }
-
-  await runAllNowImpl()
 }
