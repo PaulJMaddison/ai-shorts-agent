@@ -15,7 +15,8 @@
     "start": "node dist/cli/index.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "webhooks": "tsx src/cli/index.ts webhooks --port 8080"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
