@@ -77,7 +77,7 @@ describe('multi-client stub pipeline', () => {
     process.env.NODE_ENV = 'test';
     process.env.USE_STUBS = 'true';
     process.env.DATA_DIR = './data';
-    process.env.STUB_RENDER_MS = '1000';
+    process.env.STUB_RENDER_MS = '200';
 
     process.chdir(testRoot);
 

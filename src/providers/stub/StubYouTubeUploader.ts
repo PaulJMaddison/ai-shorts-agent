@@ -2,8 +2,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
+import { env } from '../../config/env.js';
 import type { Uploader } from '../../core/interfaces.js';
 import type { UploadResult } from '../../core/types.js';
+
+function shouldFail(failRate: number): boolean {
+  return Math.random() < failRate;
+}
 
 export class StubYouTubeUploader implements Uploader {
   async uploadShort(input: Parameters<Uploader['uploadShort']>[0]): Promise<UploadResult> {
@@ -36,6 +41,12 @@ export class StubYouTubeUploader implements Uploader {
     const uploadLogPath = path.join(uploadsDir, `uploaded_${filenameSafeTimestamp}.json`);
 
     await writeFile(uploadLogPath, JSON.stringify(payload, null, 2), 'utf8');
+
+    if (shouldFail(env.STUB_FAIL_RATE)) {
+      throw new Error(
+        `Simulated uploader failure for client ${input.client.id} at fail rate ${env.STUB_FAIL_RATE}`
+      );
+    }
 
     const youtubeVideoId = `stub_${crypto.randomBytes(8).toString('hex')}`;
 
