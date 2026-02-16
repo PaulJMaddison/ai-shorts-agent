@@ -38,7 +38,25 @@ Quick start:
 cp data/clients.example.json data/clients.json
 ```
 
-If `clients.json` is missing, the app can create a default file with one stub client via `ensureDefaultClientsFile` in `src/config/clients.ts`.
+If `clients.json` is missing, the app now auto-copies `data/clients.example.json` on first run via `ensureDefaultClientsFile` in `src/config/clients.ts`.
+
+### How to add a new client profile
+
+1. Open `data/clients.json`.
+2. Add a new object to the array with a unique `id`, your niche, topics, and provider blocks (`voice`, `avatar`, `youtube`).
+3. Keep at least one topic in `topics` so the runner can pick content ideas.
+4. Run `pnpm dev -- clients` to verify the new client loads correctly.
+
+### Plug in real avatar/voice IDs later
+
+The starter uses stub providers/IDs in the example file so you can run locally first.
+When you're ready for production providers, replace:
+
+- `voice.provider` and `voice.voiceId` (for example, ElevenLabs voice IDs)
+- `avatar.provider` and `avatar.avatarId` (for example, HeyGen/D-ID avatar IDs)
+- `youtube.provider` and `youtube.channelId`
+
+You can migrate one client at a time by updating its provider fields without changing the rest of the schema.
 
 ## Scripts
 
@@ -50,6 +68,13 @@ If `clients.json` is missing, the app can create a default file with one stub cl
 - `pnpm lint` – run ESLint
 - `pnpm format` – run Prettier
 - `pnpm test` – run Vitest test suite
+
+### Running
+
+```bash
+pnpm dev -- run --client tech_en_gb_stub
+pnpm dev -- schedule
+```
 
 ## Project structure
 

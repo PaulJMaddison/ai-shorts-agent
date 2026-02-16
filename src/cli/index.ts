@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 
 import { env } from '../config/env.js';
-import { loadClients, type ClientProfile } from '../config/clients.js';
+import { ensureDefaultClientsFile, loadClients, type ClientProfile } from '../config/clients.js';
 import { createProviders } from '../providers/factory.js';
 import { jobStore } from '../storage/index.js';
 
@@ -119,6 +119,7 @@ async function runForClient(client: RuntimeClient, options: RunOptions = {}): Pr
 }
 
 async function loadRuntimeClients(): Promise<RuntimeClient[]> {
+  await ensureDefaultClientsFile(CLIENTS_FILE);
   const loadedClients = await loadClients(CLIENTS_FILE);
   return loadedClients.map(toRuntimeClient);
 }

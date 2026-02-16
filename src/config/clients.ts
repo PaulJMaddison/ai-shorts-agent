@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 
@@ -48,31 +48,13 @@ export async function ensureDefaultClientsFile(filePath: string): Promise<void> 
     await access(filePath);
     return;
   } catch {
-    // No-op: create the file if it does not exist.
+    // No-op: copy the example file if it does not exist.
   }
 
   await mkdir(path.dirname(filePath), { recursive: true });
 
-  const defaultClients: ClientProfile[] = [
-    {
-      id: 'default_stub_client',
-      name: 'Default Stub Client',
-      niche: 'general',
-      topics: ['daily news'],
-      voice: {
-        provider: 'stub',
-        voiceId: 'stub_voice'
-      },
-      avatar: {
-        provider: 'stub',
-        avatarId: 'stub_avatar'
-      },
-      youtube: {
-        provider: 'stub',
-        channelId: 'stub_channel'
-      }
-    }
-  ];
+  const parsedFilePath = path.parse(filePath);
+  const exampleFilePath = path.join(parsedFilePath.dir, `${parsedFilePath.name}.example${parsedFilePath.ext}`);
 
-  await writeFile(filePath, `${JSON.stringify(defaultClients, null, 2)}\n`, 'utf8');
+  await copyFile(exampleFilePath, filePath);
 }
