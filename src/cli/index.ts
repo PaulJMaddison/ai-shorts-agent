@@ -1,14 +1,17 @@
 import { Command } from 'commander';
+import { readFile } from 'node:fs/promises';
 
 import { env } from '../config/env.js';
 import { ensureDefaultClientsFile, loadClients, type ClientProfile } from '../config/clients.js';
 import { createProviders } from '../providers/factory.js';
 import { startWebhooksServer } from '../server/webhooks.js';
-import { jobStore } from '../storage/index.js';
+import { jobStore, metricsStore, quotaStore, runStore } from '../storage/index.js';
 
 const CLIENTS_FILE = env.CLIENTS_FILE;
 const SCHEDULE_INTERVAL_MS = 60_000;
 const DEFAULT_JOB_LIMIT = 20;
+const DEFAULT_RUN_LIMIT = 10;
+const DEFAULT_METRICS_LIMIT = 50;
 const RENDER_POLL_INTERVAL_MS = 1_000;
 const RENDER_TIMEOUT_MS = 60_000;
 
@@ -197,6 +200,77 @@ async function jobsCommand(options: { client?: string; limit: string }): Promise
   );
 }
 
+function parsePositiveLimit(value: string, fallback: number): number {
+  const parsedValue = Number.parseInt(value, 10);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    return fallback;
+  }
+
+  return parsedValue;
+}
+
+async function runsCommand(options: { client: string; limit: string }): Promise<void> {
+  const limit = parsePositiveLimit(options.limit, DEFAULT_RUN_LIMIT);
+  const runs = await runStore.listRuns(env.DATA_DIR, options.client, limit);
+
+  console.table(
+    runs.map((run) => ({
+      runId: typeof run.runId === 'string' ? run.runId : '',
+      startedAt: typeof run.startedAt === 'string' ? run.startedAt : '',
+      finishedAt: typeof run.finishedAt === 'string' ? run.finishedAt : '',
+      status: typeof run.status === 'string' ? run.status : '',
+      topic: typeof run.topic === 'string' ? run.topic : ''
+    }))
+  );
+}
+
+async function metricsCommand(options: { limit: string }): Promise<void> {
+  const limit = parsePositiveLimit(options.limit, DEFAULT_METRICS_LIMIT);
+  const metrics = await metricsStore.readMetrics(env.DATA_DIR, limit);
+
+  console.table(metrics);
+}
+
+type ClientQuotaConfig = {
+  id: string;
+  limits?: {
+    maxUploadsPerDay?: number;
+  };
+  schedule?: {
+    maxPerDay?: number;
+  };
+};
+
+async function getConfiguredMaxUploadsPerDay(clientId: string): Promise<number> {
+  await ensureDefaultClientsFile(CLIENTS_FILE);
+  const rawClients = JSON.parse(await readFile(CLIENTS_FILE, 'utf8')) as ClientQuotaConfig[];
+  const client = rawClients.find((entry) => entry.id === clientId);
+
+  if (!client) {
+    throw new Error(`Client not found: ${clientId}`);
+  }
+
+  const maxUploadsPerDay = client.limits?.maxUploadsPerDay ?? client.schedule?.maxPerDay ?? 1;
+
+  return Number.isInteger(maxUploadsPerDay) && maxUploadsPerDay > 0 ? maxUploadsPerDay : 1;
+}
+
+async function quotaCommand(options: { client: string }): Promise<void> {
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const dailyCount = quotaStore.getDailyCount(env.DATA_DIR, options.client, todayISO);
+  const maxUploadsPerDay = await getConfiguredMaxUploadsPerDay(options.client);
+
+  console.table([
+    {
+      clientId: options.client,
+      date: todayISO,
+      todayCount: dailyCount,
+      maxUploadsPerDay
+    }
+  ]);
+}
+
 async function jobCommand(jobId: string): Promise<void> {
   const job = await jobStore.get(jobId);
 
@@ -262,6 +336,31 @@ async function main(): Promise<void> {
     .option('--limit <number>', 'Max jobs', String(DEFAULT_JOB_LIMIT))
     .action(async (options: { client?: string; limit: string }) => {
       await jobsCommand(options);
+    });
+
+  program
+    .command('runs')
+    .description('List recent run logs for a client.')
+    .requiredOption('--client <id>', 'Client id')
+    .option('--limit <number>', 'Max runs', String(DEFAULT_RUN_LIMIT))
+    .action(async (options: { client: string; limit: string }) => {
+      await runsCommand(options);
+    });
+
+  program
+    .command('metrics')
+    .description('Show recent metrics events.')
+    .option('--limit <number>', 'Max metric entries', String(DEFAULT_METRICS_LIMIT))
+    .action(async (options: { limit: string }) => {
+      await metricsCommand(options);
+    });
+
+  program
+    .command('quota')
+    .description("Show today's upload quota usage for a client.")
+    .requiredOption('--client <id>', 'Client id')
+    .action(async (options: { client: string }) => {
+      await quotaCommand(options);
     });
 
   program.command('job <jobId>').description('Get one job by id.').action(async (jobId: string) => {
