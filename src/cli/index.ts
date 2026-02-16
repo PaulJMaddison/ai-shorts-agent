@@ -7,6 +7,7 @@ import { ensureDefaultClientsFile, loadClients, type ClientProfile } from '../co
 import { createProviders } from '../providers/factory.js';
 import { startWebhooksServer } from '../server/webhooks.js';
 import { jobStore, metricsStore, quotaStore, runStore } from '../storage/index.js';
+import { runDoctor } from '../workflows/doctor.js';
 
 const CLIENTS_FILE = env.CLIENTS_FILE;
 const SCHEDULE_INTERVAL_MS = 60_000;
@@ -264,6 +265,49 @@ async function getConfiguredMaxUploadsPerDay(clientId: string): Promise<number> 
   return Number.isInteger(maxUploadsPerDay) && maxUploadsPerDay > 0 ? maxUploadsPerDay : 1;
 }
 
+
+async function doctorCommand(options: { client?: string }): Promise<void> {
+  const result = await runDoctor({
+    env,
+    clientsFile: CLIENTS_FILE,
+    clientId: options.client
+  });
+
+  if (result.mode === 'stubs') {
+    console.log('OK (stubs mode)');
+  } else {
+    console.log(result.ok ? 'OK (live mode checks passed)' : 'Live mode checks failed.');
+
+    if (result.checks.length > 0) {
+      console.table(
+        result.checks.map((check) => ({
+          check: check.label,
+          status: check.status
+        }))
+      );
+    }
+  }
+
+  if (result.clients.length > 0) {
+    console.table(
+      result.clients.map((client) => ({
+        clientId: client.id,
+        voiceProvider: client.providers.voice,
+        avatarProvider: client.providers.avatar,
+        youtubeProvider: client.providers.youtube
+      }))
+    );
+  }
+
+  if (!result.ok) {
+    for (const error of result.errors) {
+      console.error(`- ${error}`);
+    }
+
+    throw new Error('Doctor checks failed.');
+  }
+}
+
 async function quotaCommand(options: { client: string }): Promise<void> {
   const todayISO = new Date().toISOString().slice(0, 10);
   const dailyCount = quotaStore.getDailyCount(env.DATA_DIR, options.client, todayISO);
@@ -397,6 +441,15 @@ async function main(): Promise<void> {
     .option('--limit <number>', 'Max metric entries', String(DEFAULT_METRICS_LIMIT))
     .action(async (options: { limit: string }) => {
       await metricsCommand(options);
+    });
+
+
+  program
+    .command('doctor')
+    .description('Validate environment and client provider configuration.')
+    .option('--client <id>', 'Validate only one client id')
+    .action(async (options: { client?: string }) => {
+      await doctorCommand(options);
     });
 
   program

@@ -24,7 +24,8 @@ const envSchema = z.object({
   DID_API_KEY: z.string().trim().min(1).optional(),
   YOUTUBE_CLIENT_ID: z.string().trim().min(1).optional(),
   YOUTUBE_CLIENT_SECRET: z.string().trim().min(1).optional(),
-  YOUTUBE_REDIRECT_URI: z.string().trim().min(1).optional()
+  YOUTUBE_REDIRECT_URI: z.string().trim().min(1).optional(),
+  YOUTUBE_REFRESH_TOKEN: z.string().trim().min(1).optional()
 });
 
 export type Env = z.infer<typeof envSchema>;
