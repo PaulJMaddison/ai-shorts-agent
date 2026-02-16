@@ -3,3 +3,4 @@ export interface StorageAdapter {
 }
 
 export * as jobStore from './jobStore.js';
+export * as quotaStore from './quotaStore.js';
