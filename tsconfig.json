@@ -10,10 +10,10 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node", "vitest/globals"],
+    "types": ["node"],
     "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["src", "test", "vitest.config.ts"],
-  "exclude": ["dist", "node_modules"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "test"]
 }
