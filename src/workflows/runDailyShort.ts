@@ -1,0 +1,264 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { setTimeout as delay } from 'node:timers/promises';
+import path from 'node:path';
+
+import type { Providers } from '../core/interfaces.js';
+import type { AudioAsset, ClientProfile, RenderJob, Script, UploadResult, VideoAsset } from '../core/types.js';
+import { logInfo } from '../utils/logger.js';
+
+type PrivacyStatus = 'public' | 'unlisted' | 'private';
+
+type SchedulerConfig = {
+  timezone?: string;
+};
+
+type YouTubePublishingConfig = {
+  defaultPrivacyStatus?: PrivacyStatus;
+  madeForKids?: boolean;
+};
+
+export type RunDailyShortClient = ClientProfile & {
+  schedule?: SchedulerConfig;
+  youtube?: YouTubePublishingConfig;
+  topics?: string[];
+};
+
+export type JobStoreLike = Partial<{
+  save: (job: RenderJob) => Promise<RenderJob>;
+  update: (job: RenderJob) => Promise<RenderJob>;
+}>;
+
+export type DailyRunResult = {
+  status: 'completed' | 'failed';
+  clientId: string;
+  topic: string;
+  startedAt: string;
+  finishedAt: string;
+  script?: Script;
+  audio?: AudioAsset;
+  job?: RenderJob;
+  video?: VideoAsset;
+  upload?: UploadResult;
+  error?: {
+    message: string;
+    stack?: string;
+  };
+  runLogPath: string;
+};
+
+export async function runDailyShort(input: {
+  client: RunDailyShortClient;
+  providers: Providers;
+  jobStore: JobStoreLike;
+  topicOverride?: string;
+  privacyOverride?: PrivacyStatus;
+}): Promise<DailyRunResult> {
+  const { client, providers, jobStore, topicOverride, privacyOverride } = input;
+
+  const startedAt = new Date().toISOString();
+  const timezone = client.schedule?.timezone ?? 'UTC';
+  const todayInTimezone = getTodayInTimezone(timezone);
+
+  const runContext: Omit<DailyRunResult, 'status' | 'finishedAt' | 'runLogPath'> = {
+    clientId: client.id,
+    topic: topicOverride ?? selectTopic(client, todayInTimezone),
+    startedAt
+  };
+
+  logInfo(`runDailyShort started for client=${client.id} startedAt=${startedAt}`);
+
+  try {
+    logInfo(`Selecting topic for client=${client.id} timezone=${timezone}`);
+
+    logInfo(`Writing script for client=${client.id} topic="${runContext.topic}"`);
+    runContext.script = await providers.writer.writeScript({
+      client,
+      topic: runContext.topic
+    });
+
+    logInfo(`Synthesizing voice for client=${client.id}`);
+    runContext.audio = await providers.voice.synthesize({
+      client,
+      script: runContext.script
+    });
+
+    logInfo(`Submitting render job for client=${client.id}`);
+    runContext.job = await providers.renderer.render({
+      client,
+      audio: runContext.audio,
+      script: runContext.script
+    });
+
+    if (jobStore.save) {
+      await jobStore.save(runContext.job);
+    }
+
+    logInfo(`Polling render job status jobId=${runContext.job.id}`);
+    runContext.job = await pollForCompletedJob({
+      providers,
+      client,
+      jobId: runContext.job.id,
+      jobStore
+    });
+
+    logInfo(`Downloading rendered video jobId=${runContext.job.id}`);
+    runContext.video = await providers.renderer.download({
+      client,
+      jobId: runContext.job.id
+    });
+
+    logInfo(`Uploading short for client=${client.id}`);
+    runContext.upload = await providers.uploader.uploadShort({
+      client,
+      video: runContext.video,
+      script: runContext.script,
+      opts: {
+        privacyStatus: privacyOverride ?? client.youtube?.defaultPrivacyStatus ?? 'private',
+        madeForKids: client.youtube?.madeForKids ?? false
+      }
+    });
+
+    const finishedAt = new Date().toISOString();
+
+    const result: DailyRunResult = {
+      ...runContext,
+      status: 'completed',
+      finishedAt,
+      runLogPath: ''
+    };
+
+    result.runLogPath = await writeRunLog(result);
+
+    logInfo(`runDailyShort completed for client=${client.id} finishedAt=${finishedAt}`);
+
+    return result;
+  } catch (error) {
+    const finishedAt = new Date().toISOString();
+
+    const failedResult: DailyRunResult = {
+      ...runContext,
+      status: 'failed',
+      finishedAt,
+      error: {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      },
+      runLogPath: ''
+    };
+
+    failedResult.runLogPath = await writeRunLog(failedResult);
+
+    const errorMessage = failedResult.error?.message ?? 'Unknown error';
+    logInfo(
+      `runDailyShort failed for client=${client.id} finishedAt=${finishedAt} error="${errorMessage}"`
+    );
+
+    throw new Error(
+      `Daily short run failed for client ${client.id}. Run log: ${failedResult.runLogPath}`,
+      { cause: error }
+    );
+  }
+}
+
+async function pollForCompletedJob(input: {
+  providers: Providers;
+  client: RunDailyShortClient;
+  jobId: string;
+  jobStore: JobStoreLike;
+}): Promise<RenderJob> {
+  const timeoutMs = 120_000;
+  const pollIntervalMs = 1_000;
+  const startedAtMs = Date.now();
+
+  while (Date.now() - startedAtMs <= timeoutMs) {
+    const job = await input.providers.renderer.getStatus({
+      client: input.client,
+      jobId: input.jobId
+    });
+
+    if (input.jobStore.update) {
+      await input.jobStore.update(job);
+    }
+
+    if (job.status === 'completed') {
+      return job;
+    }
+
+    if (job.status === 'failed') {
+      throw new Error(`Render job failed: ${job.id}${job.error ? ` (${job.error})` : ''}`);
+    }
+
+    await sleep(pollIntervalMs);
+  }
+
+  throw new Error(`Render job timed out after ${timeoutMs / 1000}s: ${input.jobId}`);
+}
+
+function selectTopic(client: RunDailyShortClient, today: Date): string {
+  const topicCandidates = [
+    ...(Array.isArray(client.topicBank) ? client.topicBank : []),
+    ...(Array.isArray(client.topics) ? client.topics : [])
+  ].filter((topic): topic is string => topic.trim().length > 0);
+
+  if (topicCandidates.length === 0) {
+    throw new Error(`No topics configured for client ${client.id}`);
+  }
+
+  const dayOfYear = getDayOfYear(today);
+  const topicIndex = dayOfYear % topicCandidates.length;
+
+  return topicCandidates[topicIndex];
+}
+
+function getTodayInTimezone(timezone: string): Date {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  const year = Number(parts.find((part) => part.type === 'year')?.value);
+  const month = Number(parts.find((part) => part.type === 'month')?.value);
+  const day = Number(parts.find((part) => part.type === 'day')?.value);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    throw new Error(`Unable to compute date in timezone: ${timezone}`);
+  }
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function getDayOfYear(date: Date): number {
+  const yearStart = Date.UTC(date.getUTCFullYear(), 0, 1);
+  const currentDay = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+
+  return Math.floor((currentDay - yearStart) / 86_400_000) + 1;
+}
+
+function getRunLogPath(clientId: string, startedAt: string): string {
+  const safeTimestamp = startedAt.replace(/:/g, '-').replace(/\..+$/, '');
+
+  return path.resolve(
+    process.cwd(),
+    'data',
+    'clients',
+    clientId,
+    'runs',
+    `run_${safeTimestamp}.json`
+  );
+}
+
+async function writeRunLog(result: DailyRunResult): Promise<string> {
+  const runLogPath = getRunLogPath(result.clientId, result.startedAt);
+
+  await mkdir(path.dirname(runLogPath), { recursive: true });
+  await writeFile(runLogPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+
+  return runLogPath;
+}
+
+async function sleep(durationMs: number): Promise<void> {
+  await delay(durationMs);
+}
