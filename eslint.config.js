@@ -12,9 +12,14 @@ export default [
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       parserOptions: {
-        project: './tsconfig.json',
-        sourceType: 'module'
+        project: './tsconfig.json'
+      },
+      globals: {
+        console: 'readonly',
+        process: 'readonly'
       }
     },
     plugins: {
@@ -22,7 +27,7 @@ export default [
     },
     rules: {
       ...tseslint.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': ['warn', { 'argsIgnorePattern': '^_' }]
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
     }
   },
   prettier
