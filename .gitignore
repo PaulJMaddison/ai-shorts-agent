@@ -5,3 +5,6 @@ dist/
 !.env.example
 coverage/
 .DS_Store
+.vs/VSWorkspaceState.json
+.vs/a-shorts-agent/v17/DocumentLayout.json
+.vs/a-shorts-agent/v17/.wsuo
