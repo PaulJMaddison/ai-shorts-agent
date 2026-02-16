@@ -11,6 +11,20 @@ You can run the full local pipeline with **no external API keys** by keeping stu
 
 In this mode, the app writes local artifacts/logs instead of calling OpenAI/ElevenLabs/HeyGen/D-ID/YouTube APIs.
 
+## Go live with real APIs
+
+- Read `docs/GO_LIVE.md` for the complete production-readiness checklist.
+- Stubs are enabled by default and are safe for local development.
+- Multi-client configuration is managed in `data/clients.json`.
+
+Commands:
+
+```bash
+pnpm dev -- clients
+pnpm dev -- doctor
+pnpm dev -- run --client <id> --privacy unlisted
+```
+
 ## Stack
 
 - Node.js 20+

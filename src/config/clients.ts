@@ -13,11 +13,13 @@ export const clientProfileSchema = z.object({
   }),
   avatar: z.object({
     provider: z.string().trim().min(1),
-    avatarId: z.string().trim().min(1)
+    avatarId: z.string().trim().min(1).optional(),
+    imageUrl: z.string().trim().min(1).optional()
   }),
   youtube: z.object({
     provider: z.string().trim().min(1),
-    channelId: z.string().trim().min(1)
+    channelId: z.string().trim().min(1).optional(),
+    authRef: z.string().trim().min(1).optional()
   })
 });
 
