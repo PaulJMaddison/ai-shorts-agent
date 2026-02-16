@@ -10,12 +10,17 @@ import { getVideoDir } from '../../utils/paths.js';
 
 const DEFAULT_COMPLETION_DELAY_MS = 5_000;
 
+function shouldFail(failRate: number): boolean {
+  return Math.random() < failRate;
+}
 
 export class StubAvatarRenderer implements AvatarRenderer {
   private readonly completionDelayMs: number;
+  private readonly failRate: number;
 
   constructor() {
     this.completionDelayMs = env.STUB_RENDER_MS ?? DEFAULT_COMPLETION_DELAY_MS;
+    this.failRate = env.STUB_FAIL_RATE;
   }
   async render(input: {
     client: ClientProfile;
@@ -40,10 +45,22 @@ export class StubAvatarRenderer implements AvatarRenderer {
   async getStatus(input: { client: ClientProfile; jobId: string }): Promise<RenderJob> {
     const job = await this.getOwnedJob(input.client.id, input.jobId);
 
-    if (
-      job.status !== 'completed' &&
-      Date.now() - Date.parse(job.createdAt) >= this.completionDelayMs
-    ) {
+    if (job.status !== 'processing') {
+      return job;
+    }
+
+    if (shouldFail(this.failRate)) {
+      const failedJob: RenderJob = {
+        ...job,
+        status: 'failed',
+        updatedAt: new Date().toISOString(),
+        error: `Simulated renderer failure at fail rate ${this.failRate}`
+      };
+
+      return jobStore.update(failedJob);
+    }
+
+    if (Date.now() - Date.parse(job.createdAt) >= this.completionDelayMs) {
       const completedJob: RenderJob = {
         ...job,
         status: 'completed',

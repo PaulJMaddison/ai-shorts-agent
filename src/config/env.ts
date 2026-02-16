@@ -14,6 +14,7 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   USE_STUBS: booleanFromEnv.default('true'),
   STUB_RENDER_MS: z.coerce.number().int().nonnegative().default(5_000),
+  STUB_FAIL_RATE: z.coerce.number().min(0).max(1).default(0),
   DATA_DIR: z.string().trim().min(1).default('./data'),
   CLIENTS_FILE: z.string().trim().min(1).default('./data/clients.json'),
   DEFAULT_TIMEZONE: z.string().trim().min(1).default('Europe/London'),
