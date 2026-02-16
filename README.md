@@ -45,6 +45,7 @@ If `clients.json` is missing, the app can create a default file with one stub cl
 - `pnpm dev` – watch mode CLI runner (`tsx watch src/cli/index.ts`)
 - `pnpm run` – run CLI command (`tsx src/cli/index.ts run`)
 - `pnpm build` – compile TypeScript to `dist/`
+- `pnpm webhooks` – start webhook server (`tsx src/cli/index.ts webhooks --port 8080`)
 - `pnpm start` – run compiled CLI
 - `pnpm lint` – run ESLint
 - `pnpm format` – run Prettier
