@@ -2,6 +2,35 @@
 
 A clean TypeScript + Node.js starter repository for an AI shorts agent project.
 
+Turn one codebase into many short-form channels.
+
+This project helps creators, agencies, and product teams launch an **AI-powered Shorts engine** with a practical local-first workflow: test everything in stub mode, then switch on real providers when you are ready to ship.
+
+## Why use this project
+
+- **Ship faster:** start with no API keys and no external dependencies, then progressively connect OpenAI/voice/avatar/YouTube providers.
+- **Scale safely:** run one profile or many client channels from the same environment.
+- **Production-minded by default:** includes retry behavior, quality gates, quota simulation, logs, metrics, and webhook scaffolding.
+- **Developer-friendly stack:** TypeScript, clean interfaces, test coverage, and a CLI that keeps iteration fast.
+
+## Who this is for
+
+- **Indie creators** building a repeatable Shorts workflow without vendor lock-in.
+- **Agencies** managing multiple client channels with consistent automation.
+- **Startups and media teams** validating AI video pipelines before investing in full production infrastructure.
+- **Developers** who want a strong reference architecture for AI content operations.
+
+## What you can do with it
+
+- Run daily short generation per client profile.
+- Enforce script quality constraints automatically.
+- Simulate rendering/upload failures and quotas before going live.
+- Track run artifacts, metrics, and webhook events for visibility and debugging.
+
+## Value proposition in one line
+
+**From idea to publishable short, with guardrails, observability, and multi-client control—without needing to build the whole system from scratch.**
+
 ## No API keys required (stub mode)
 
 You can run the full local pipeline with **no external API keys** by keeping stubs enabled:
