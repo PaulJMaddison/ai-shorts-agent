@@ -1,48 +1,54 @@
 # ai-shorts-agent
 
-A clean TypeScript + Node.js starter repository for an AI shorts agent project.
+`ai-shorts-agent` is a TypeScript automation pipeline for generating, rendering, and publishing short-form video content. It is designed to be runnable end-to-end in local stub mode first, then swapped onto real providers later.
 
 Turn one codebase into many short-form channels.
 
-This project helps creators, agencies, and product teams launch an **AI-powered Shorts engine** with a practical local-first workflow: test everything in stub mode, then switch on real providers when you are ready to ship.
+This project helps creators, agencies, and product teams launch an AI-powered Shorts engine with a practical local-first workflow: test everything in stub mode, then switch on real providers when you are ready to ship.
+
+This repo is intentionally opinionated about reliability: provider boundaries are explicit, runs are logged, metrics are persisted, failures can be simulated, quotas are enforced, and the core workflow is covered by tests.
 
 ## Why use this project
 
-- **Ship faster:** start with no API keys and no external dependencies, then progressively connect OpenAI/voice/avatar/YouTube providers.
-- **Scale safely:** run one profile or many client channels from the same environment.
-- **Production-minded by default:** includes retry behavior, quality gates, quota simulation, logs, metrics, and webhook scaffolding.
-- **Developer-friendly stack:** TypeScript, clean interfaces, test coverage, and a CLI that keeps iteration fast.
+- Ship faster: start with no API keys and no external dependencies, then progressively connect OpenAI, voice, avatar, and YouTube providers.
+- Scale safely: run one profile or many client channels from the same environment.
+- Production-minded by default: includes retry behavior, quality gates, quota simulation, logs, metrics, and webhook scaffolding.
+- Developer-friendly stack: TypeScript, clean interfaces, test coverage, and a CLI that keeps iteration fast.
 
 ## Who this is for
 
-- **Indie creators** building a repeatable Shorts workflow without vendor lock-in.
-- **Agencies** managing multiple client channels with consistent automation.
-- **Startups and media teams** validating AI video pipelines before investing in full production infrastructure.
-- **Developers** who want a strong reference architecture for AI content operations.
+- Indie creators building a repeatable Shorts workflow without vendor lock-in.
+- Agencies managing multiple client channels with consistent automation.
+- Startups and media teams validating AI video pipelines before investing in full production infrastructure.
+- Developers who want a strong reference architecture for AI content operations.
 
 ## What you can do with it
 
 - Run daily short generation per client profile.
 - Enforce script quality constraints automatically.
-- Simulate rendering/upload failures and quotas before going live.
+- Simulate rendering and upload failures before going live.
+- Simulate upload quotas and operational limits locally.
 - Track run artifacts, metrics, and webhook events for visibility and debugging.
 
 ## Value proposition in one line
 
-**From idea to publishable short, with guardrails, observability, and multi-client control—without needing to build the whole system from scratch.**
+**From idea to publishable short, with guardrails, observability, and multi-client control, without needing to build the whole system from scratch.**
 
-## No API keys required (stub mode)
+## Why this project is interesting
 
-You can run the full local pipeline with **no external API keys** by keeping stubs enabled:
+This is not just a "call an LLM and hope" demo. The repo shows a few engineering choices that matter in real automation systems:
 
-- `USE_STUBS=true` (default)
-- Stub providers in `data/clients.json` (`voice.provider`, `avatar.provider`, `youtube.provider` all set to `"stub"` in the example)
-
-In this mode, the app writes local artifacts/logs instead of calling OpenAI/ElevenLabs/HeyGen/D-ID/YouTube APIs.
+- local-first development with zero API keys required
+- pluggable providers for script writing, voice, avatar rendering, and uploads
+- deterministic testability via stub providers and failure injection
+- structured run logs and append-only metrics for observability
+- quota enforcement and retry logic around failure-prone steps
+- multi-client support from a single runtime
 
 ## Go live with real APIs
 
-- Read `docs/GO_LIVE.md` for the complete production-readiness checklist.
+- Read `docs/GO_LIVE.md` for the production-readiness checklist.
+- Read `docs/PROVIDERS.md` for provider setup notes.
 - Stubs are enabled by default and are safe for local development.
 - Multi-client configuration is managed in `data/clients.json`.
 
@@ -54,204 +60,163 @@ pnpm dev -- doctor
 pnpm dev -- run --client <id> --privacy unlisted
 ```
 
-## Stack
+## Architecture
 
-- Node.js 20+
-- TypeScript (ESM)
-- pnpm
-- ESLint + Prettier
-- Vitest
-- dotenv + zod for environment parsing and validation
-- tsx for local development execution
+The main workflow is:
 
-## Getting started
+1. Select a client profile and topic.
+2. Generate a script.
+3. Synthesize voice audio.
+4. Submit an avatar render job and poll until completion.
+5. Download the rendered video.
+6. Upload the short.
+7. Persist logs, metrics, and job state throughout the run.
+
+Core modules:
+
+- `src/cli`: operator-facing commands
+- `src/config`: environment parsing and client config loading
+- `src/providers`: provider adapters plus local stubs
+- `src/storage`: job, quota, metric, and run-log persistence
+- `src/workflows`: orchestration, topic selection, scheduling, quality gates, and health checks
+- `src/server`: webhook endpoints for provider callbacks
+- `test`: unit and workflow coverage
+
+## Local-first quick start
 
 ```bash
 pnpm install
 cp .env.example .env
-pnpm dev
+cp data/clients.example.json data/clients.json
+pnpm dev -- clients
+pnpm dev -- run --client tech_en_gb_stub
 ```
 
-## Client profiles (`clients.json`)
+By default the repo runs in stub mode:
 
-Client profiles are loaded from `CLIENTS_FILE` (default: `./data/clients.json`) and must be a JSON array of objects in this shape:
+- `USE_STUBS=true`
+- `voice.provider=stub`
+- `avatar.provider=stub`
+- `youtube.provider=stub`
 
-- `id`: unique client identifier
-- `name`: display name
-- `niche`: content niche
-- `topics`: non-empty list of content topics
-- `voice`: `{ provider, voiceId }`
-- `avatar`: `{ provider, avatarId }`
-- `youtube`: `{ provider, channelId }`
+That means you can exercise the pipeline without OpenAI, ElevenLabs, HeyGen, D-ID, or YouTube credentials.
 
-### Multi-client support
-
-`clients.json` is an **array**, so a single run environment can manage multiple client profiles (for example one tech channel + one finance channel). The repo ships with two stub clients in `data/clients.example.json`.
-
-Quick start:
+## CLI commands
 
 ```bash
-cp data/clients.example.json data/clients.json
+pnpm dev -- clients
+pnpm dev -- client:add --id gaming_en_gb_stub --name "Gaming UK" --niche gaming
+pnpm dev -- doctor
+pnpm dev -- run --client tech_en_gb_stub
+pnpm dev -- run-all
+pnpm dev -- schedule
+pnpm dev -- jobs --limit 10
+pnpm dev -- job <jobId>
+pnpm dev -- runs --client tech_en_gb_stub --limit 10
+pnpm dev -- metrics --limit 50
+pnpm dev -- quota --client tech_en_gb_stub
+pnpm webhooks
 ```
 
-If `clients.json` is missing, the app now auto-copies `data/clients.example.json` on first run via `ensureDefaultClientsFile` in `src/config/clients.ts`.
-
-### How to add a new client profile
-
-1. Open `data/clients.json`.
-2. Add a new object to the array with a unique `id`, your niche, topics, and provider blocks (`voice`, `avatar`, `youtube`).
-3. Keep at least one topic in `topics` so the runner can pick content ideas.
-4. Run `pnpm dev -- clients` to verify the new client loads correctly.
-
-### Plug in real avatar/voice IDs later
-
-The starter uses stub providers/IDs in the example file so you can run locally first.
-When you're ready for production providers, replace:
-
-- `voice.provider` and `voice.voiceId` (for example, ElevenLabs voice IDs)
-- `avatar.provider` and `avatar.avatarId` (for example, HeyGen/D-ID avatar IDs)
-- `youtube.provider` and `youtube.channelId`
-
-You can migrate one client at a time by updating its provider fields without changing the rest of the schema.
-
-## Topic selection strategies (rotate / random / calendar)
-
-The topic selector supports three strategies through `topicSelectionMode`:
-
-- `rotate` (default): cycles through topic list by day-of-year.
-- `random`: deterministic daily random pick (stable for a client/date).
-- `calendar`: lets you pin specific dates using `YYYY-MM-DD|Topic`, with fallback rotation for other entries.
-
-### Strategy examples
+## Example client profile
 
 ```json
 {
   "id": "tech_en_gb_stub",
-  "displayName": "Tech UK Stub Channel",
+  "name": "Tech UK Stub Channel",
   "niche": "technology",
-  "language": "en-GB",
-  "tone": "educational",
-  "topicSelectionMode": "rotate",
-  "topicBank": ["ai tools", "developer productivity", "startup launches"]
+  "topics": ["ai tools", "developer productivity", "startup launches"],
+  "voice": {
+    "provider": "stub",
+    "voiceId": "stub_voice_en_gb_tech"
+  },
+  "avatar": {
+    "provider": "stub",
+    "avatarId": "stub_avatar_tech_host"
+  },
+  "youtube": {
+    "provider": "stub",
+    "channelId": "stub_tech_channel"
+  }
 }
 ```
 
-```json
-{
-  "id": "finance_en_gb_stub",
-  "displayName": "Finance UK Stub Channel",
-  "niche": "personal finance",
-  "language": "en-GB",
-  "tone": "educational",
-  "topicSelectionMode": "random",
-  "topicBank": ["budgeting", "index funds", "retirement planning"]
-}
-```
+If `data/clients.json` is missing, the app will automatically copy `data/clients.example.json` on first run.
 
-```json
-{
-  "id": "launch_channel",
-  "displayName": "Launch Updates",
-  "niche": "tech",
-  "language": "en-GB",
-  "tone": "professional",
-  "topicSelectionMode": "calendar",
-  "topicBank": [
-    "2026-04-01|Q2 roadmap kickoff",
-    "2026-04-15|Launch day breakdown",
-    "plain fallback topic"
-  ]
-}
-```
+## Reliability features
 
-## Quality gates + auto-fix
+### Quality gates
 
-Before rendering/upload, generated scripts pass through quality validation:
+Generated scripts are validated before rendering and upload. The workflow checks:
 
-- word count range check
-- hook word cap
+- word-count range
+- hook length
 - duration cap
-- CTA presence + CTA verb check
+- CTA presence and CTA verb usage
 
-If validation fails, an automatic `fixupScript(...)` pass rewrites key fields (hook/body/cta + metadata) so the run can continue with a compliant script.
+If validation fails, `fixupScript(...)` rewrites the script so the run can continue with a compliant payload.
 
-## Failure simulation (environment variables)
+### Failure simulation
 
-You can stress-test retry and failure handling in local/stub mode:
-
-- `STUB_FAIL_RATE` (`0..1`, default `0`): probabilistic failures for renderer status checks and stub uploads.
-- `STUB_RENDER_MS` (default `5000`): simulated render completion time.
-
-Example:
+You can stress-test the pipeline in stub mode:
 
 ```bash
 STUB_FAIL_RATE=0.4 STUB_RENDER_MS=12000 pnpm dev -- run --client tech_en_gb_stub
 ```
 
-## Local quota simulation
+- `STUB_FAIL_RATE`: probability of stub failures
+- `STUB_RENDER_MS`: simulated render duration
 
-Stub uploads enforce a per-client daily quota:
+### Quota simulation
 
-- reads limit from `limits.maxUploadsPerDay` (or `schedule.maxPerDay` fallback) on the client profile
-- tracks usage in `data/clients/<clientId>/uploads/quota_YYYY-MM-DD.json`
+Stub uploads enforce a per-client daily quota and persist usage to:
 
-Use the CLI to inspect current usage:
+```text
+data/clients/<clientId>/uploads/quota_YYYY-MM-DD.json
+```
+
+Inspect quota usage with:
 
 ```bash
 pnpm dev -- quota --client tech_en_gb_stub
 ```
 
-## Run logs and metrics
+### Observability
 
-Each run writes structured local observability artifacts:
+Each workflow run writes artifacts locally:
 
-- Run logs: `data/clients/<clientId>/runs/run_<runId>.json`
-- Metrics stream: `data/metrics.json`
+- run logs: `data/clients/<clientId>/runs/run_<runId>.json`
+- metrics: `data/metrics.json`
+- webhook payloads: `data/webhooks/*.json`
 
-CLI helpers:
+This makes the system easy to debug without external dashboards.
 
-```bash
-pnpm dev -- runs --client tech_en_gb_stub --limit 10
-pnpm dev -- metrics --limit 50
-```
+## Webhook scaffolding
 
-## Webhook server scaffolding
-
-Webhook scaffolding is included for avatar providers:
+Webhook endpoints are included for avatar providers:
 
 - `POST /webhooks/heygen`
 - `POST /webhooks/did`
 
-Start it with:
+Run the server with:
 
 ```bash
 pnpm webhooks
 ```
 
-Incoming payloads are persisted to:
+If a payload includes identifiers such as `jobId`, `id`, `video_id`, or `talk_id`, the server attempts to map it back to a known local job.
 
-- `data/webhooks/heygen_<timestamp>.json`
-- `data/webhooks/did_<timestamp>.json`
-
-If a payload includes `jobId`/`id`/`video_id`/`talk_id`, the server also attempts to map it to a known local job.
-
-## Scripts
-
-- `pnpm dev` – watch mode CLI runner (`tsx watch src/cli/index.ts`)
-- `pnpm run` – run CLI command (`tsx src/cli/index.ts run`)
-- `pnpm build` – compile TypeScript to `dist/`
-- `pnpm webhooks` – start webhook server (`tsx src/cli/index.ts webhooks --port 8080`)
-- `pnpm start` – run compiled CLI
-- `pnpm lint` – run ESLint
-- `pnpm format` – run Prettier
-- `pnpm test` – run Vitest test suite
-
-### Running
+## Development workflow
 
 ```bash
-pnpm dev -- run --client tech_en_gb_stub
-pnpm dev -- schedule
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+pnpm check
 ```
+
+The repository also includes a GitHub Actions CI workflow that runs the full validation suite on pushes and pull requests.
 
 ## Project structure
 
@@ -267,4 +232,20 @@ src/
   workflows/
 test/
 data/
+docs/
+vendor/
 ```
+
+## Next extensions
+
+Natural next steps if you want to take this beyond stub mode:
+
+- implement real OpenAI, ElevenLabs, HeyGen, D-ID, and YouTube provider integrations
+- add idempotency keys and resumable workflow execution
+- persist state in SQLite or Postgres instead of JSON files
+- add richer scheduling rules and backoff policies
+- expose run metrics in a lightweight dashboard
+
+## Notes
+
+The repo currently uses local JSON persistence and stubbed providers by design. That tradeoff keeps the project easy to understand, easy to test, and safe to run on a fresh machine without cloud credentials.

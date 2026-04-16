@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const MAX_METRICS = 2000;
+const metricsCache = new Map<string, MetricEvent[]>();
 
 type MetricEventBase = {
   event: string;
@@ -17,15 +18,23 @@ function getMetricsPath(dataDir: string): string {
 async function readAllMetrics(dataDir: string): Promise<MetricEvent[]> {
   const metricsPath = getMetricsPath(dataDir);
 
+  const cached = metricsCache.get(metricsPath);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const raw = await readFile(metricsPath, 'utf8');
+    const parsed = JSON.parse(raw) as MetricEvent[];
+    metricsCache.set(metricsPath, parsed);
 
-    return JSON.parse(raw) as MetricEvent[];
+    return parsed;
   } catch (error) {
     const isMissingFile =
       error instanceof Error && 'code' in error && (error as { code?: string }).code === 'ENOENT';
 
     if (isMissingFile) {
+      metricsCache.set(metricsPath, []);
       return [];
     }
 
@@ -37,9 +46,10 @@ export async function appendMetric(dataDir: string, event: MetricEvent): Promise
   const metricsPath = getMetricsPath(dataDir);
   const existing = await readAllMetrics(dataDir);
   const next = [...existing, event].slice(-MAX_METRICS);
+  metricsCache.set(metricsPath, next);
 
   await mkdir(path.dirname(metricsPath), { recursive: true });
-  await writeFile(metricsPath, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+  await writeFile(metricsPath, `${JSON.stringify(next)}\n`, 'utf8');
 }
 
 export async function readMetrics(dataDir: string, limit = 200): Promise<MetricEvent[]> {

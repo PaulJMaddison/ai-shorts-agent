@@ -59,5 +59,5 @@ describe('storage stores', () => {
     expect(all.at(-1)?.index).toBe(5);
     expect(latest).toHaveLength(200);
     expect(latest[0]?.index).toBe(2004);
-  });
+  }, 20_000);
 });

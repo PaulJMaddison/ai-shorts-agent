@@ -18,7 +18,7 @@ export interface AudioAsset {
   path: string;
   mimeType: string;
   durationSec?: number;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface VideoAsset {
@@ -27,7 +27,7 @@ export interface VideoAsset {
   width?: number;
   height?: number;
   durationSec?: number;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
@@ -39,7 +39,7 @@ export interface RenderJob {
   createdAt: string;
   updatedAt: string;
   error?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   clientId: string;
 }
 
@@ -47,7 +47,7 @@ export interface UploadResult {
   youtubeVideoId: string;
   url: string;
   provider: 'stub' | 'youtube';
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 export interface ClientProfile {

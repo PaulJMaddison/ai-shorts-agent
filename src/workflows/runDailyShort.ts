@@ -122,11 +122,9 @@ export async function runDailyShort(input: {
         minDelayMs: 500,
         maxDelayMs: 2_000
       }
-    });
+    );
 
-    if (jobStore.save) {
-      await jobStore.save(runContext.job);
-    }
+    await persistSubmittedJob(jobStore, runContext.job);
 
     logInfo(`Polling render job status jobId=${runContext.job.id}`);
     runContext.job = await pollForCompletedJob({
@@ -240,7 +238,7 @@ export async function runDailyShort(input: {
     );
 
     throw new Error(
-      `Daily short run failed for client ${client.id}. Run log: ${failedResult.runLogPath}`,
+      `Daily short run failed for client ${client.id}: ${errorMessage}. Run log: ${failedResult.runLogPath}`,
       { cause: error }
     );
   }
@@ -333,4 +331,20 @@ function isQuotaExceededError(error: unknown): boolean {
   }
 
   return /quota exceeded/i.test(error.message);
+}
+
+async function persistSubmittedJob(jobStore: JobStoreLike, job: RenderJob): Promise<void> {
+  if (!jobStore.save) {
+    return;
+  }
+
+  try {
+    await jobStore.save(job);
+  } catch (error) {
+    if (error instanceof Error && /already exists/i.test(error.message)) {
+      return;
+    }
+
+    throw error;
+  }
 }

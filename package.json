@@ -1,8 +1,17 @@
 {
   "name": "ai-shorts-agent",
   "version": "0.1.0",
-  "private": true,
-  "description": "TypeScript Node.js starter for AI shorts automation workflows.",
+  "private": false,
+  "description": "A TypeScript automation pipeline for generating, rendering, and publishing short-form video content with local-first stub providers.",
+  "keywords": [
+    "typescript",
+    "nodejs",
+    "automation",
+    "ai",
+    "youtube-shorts",
+    "content-pipeline",
+    "testing"
+  ],
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -13,9 +22,11 @@
     "run": "tsx src/cli/index.ts run",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/cli/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
+    "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "webhooks": "tsx src/cli/index.ts webhooks --port 8080"
   },
   "dependencies": {

@@ -1,3 +1,7 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 async function loadStubAvatarRenderer() {
@@ -15,12 +19,16 @@ async function loadStubYouTubeUploader() {
 }
 
 describe('stub providers', () => {
-  afterEach(() => {
+  const tempDirs: string[] = [];
+
+  afterEach(async () => {
     vi.restoreAllMocks();
     delete process.env.STUB_FAIL_RATE;
     delete process.env.STUB_RENDER_MS;
     delete process.env.DATA_DIR;
     process.env.NODE_ENV = 'test';
+
+    await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
   });
 
   test('renderer completes after configured STUB_RENDER_MS', async () => {
@@ -115,11 +123,14 @@ describe('stub providers', () => {
   test('uploader fails with simulated error when random draw is below STUB_FAIL_RATE', async () => {
     process.env.NODE_ENV = 'test';
     process.env.STUB_FAIL_RATE = '0.5';
+    const dataDir = await mkdtemp(path.join(os.tmpdir(), 'stub-uploader-failure-'));
+    tempDirs.push(dataDir);
+    process.env.DATA_DIR = dataDir;
 
     vi.spyOn(Math, 'random').mockReturnValue(0.1);
 
     const StubYouTubeUploader = await loadStubYouTubeUploader();
-    const uploader = new StubYouTubeUploader();
+    const uploader = new StubYouTubeUploader({ dataDir });
 
     const client = {
       id: 'uploader-failure-client',

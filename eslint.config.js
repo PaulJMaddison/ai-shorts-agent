@@ -5,21 +5,23 @@ import prettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**']
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'vendor/**']
   },
   js.configs.recommended,
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.d.ts'],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: {
-        project: './tsconfig.json'
+        project: './tsconfig.eslint.json'
       },
       globals: {
+        Buffer: 'readonly',
         console: 'readonly',
-        process: 'readonly'
+        process: 'readonly',
+        setTimeout: 'readonly'
       }
     },
     plugins: {
