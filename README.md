@@ -223,7 +223,7 @@ pnpm build
 pnpm check
 ```
 
-The repository also includes a GitHub Actions CI workflow that runs the full validation suite on pushes and pull requests.
+Run `pnpm check` before publishing changes to verify typecheck, lint, tests, and build locally.
 
 ## Project structure
 
