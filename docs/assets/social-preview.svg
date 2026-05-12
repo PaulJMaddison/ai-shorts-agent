@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">AI Shorts Agent project preview</title>
+  <desc id="desc">A social preview image for the AI Shorts Agent GitHub Pages website.</desc>
+  <rect width="1200" height="630" fill="#123b2f"/>
+  <path d="M0 464 C218 372 348 520 546 402 C734 290 888 348 1200 220 L1200 630 L0 630 Z" fill="#fff6de"/>
+  <path d="M0 522 C270 418 420 560 626 452 C804 358 966 430 1200 318 L1200 630 L0 630 Z" fill="#c8ff59" opacity="0.58"/>
+  <rect x="720" y="96" width="310" height="382" rx="40" fill="#061512"/>
+  <rect x="750" y="135" width="250" height="286" rx="28" fill="#f05a3c"/>
+  <circle cx="875" cy="245" r="54" fill="#fff6de"/>
+  <path d="M812 356 C846 294 900 294 936 356 L972 418 L774 418 Z" fill="#123b2f"/>
+  <text x="96" y="180" fill="#c8ff59" font-family="IBM Plex Mono, Consolas, monospace" font-size="28">local-first automation</text>
+  <text x="96" y="286" fill="#f8fff3" font-family="Space Grotesk, sans-serif" font-size="76" font-weight="700">AI Shorts Agent</text>
+  <text x="96" y="354" fill="#f8fff3" font-family="Space Grotesk, sans-serif" font-size="34">Generate, render, upload, observe.</text>
+  <text x="96" y="432" fill="#123b2f" font-family="IBM Plex Mono, Consolas, monospace" font-size="25">TypeScript + stubs + quotas + metrics + CI</text>
+</svg>

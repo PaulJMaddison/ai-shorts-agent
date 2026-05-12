@@ -32,5 +32,17 @@ export default [
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
     }
   },
+  {
+    files: ['docs/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        document: 'readonly',
+        IntersectionObserver: 'readonly',
+        window: 'readonly'
+      }
+    }
+  },
   prettier
 ];

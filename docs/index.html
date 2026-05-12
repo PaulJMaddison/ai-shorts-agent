@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Shorts Agent | Local-first short-form video automation</title>
+    <meta
+      name="description"
+      content="A TypeScript automation pipeline for generating, rendering, publishing, and observing short-form video content with local-first stubs and production-minded provider boundaries."
+    />
+    <meta name="theme-color" content="#123b2f" />
+    <meta property="og:title" content="AI Shorts Agent" />
+    <meta
+      property="og:description"
+      content="A local-first TypeScript pipeline for AI short-form video automation, built with stubs, provider boundaries, quotas, metrics, tests, and CI."
+    />
+    <meta property="og:image" content="assets/social-preview.svg" />
+    <link rel="icon" href="assets/social-preview.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" data-scroll-header>
+      <a class="brand" href="#top" aria-label="AI Shorts Agent home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span>AI Shorts Agent</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#architecture">Architecture</a>
+        <a href="#examples">Examples</a>
+        <a href="#proof">Proof</a>
+        <a href="#run">Run it</a>
+      </nav>
+      <a class="nav-cta" href="https://github.com/PaulJMaddison/ai-shorts-agent">GitHub</a>
+    </header>
+
+    <main id="main">
+      <section id="top" class="hero section-band">
+        <div class="hero-grid" aria-hidden="true"></div>
+        <div class="hero-inner">
+          <p class="eyebrow reveal">Local-first AI content operations</p>
+          <h1 class="hero-title reveal">AI Shorts Agent</h1>
+          <p class="hero-copy reveal">
+            A production-minded TypeScript pipeline for generating, rendering, publishing, and observing
+            short-form video content across multiple client channels.
+          </p>
+          <div class="hero-actions reveal" aria-label="Primary actions">
+            <a class="button button-primary" href="https://github.com/PaulJMaddison/ai-shorts-agent">View source</a>
+            <a class="button button-secondary" href="#run">Run locally</a>
+          </div>
+          <dl class="proof-strip reveal" aria-label="Project highlights">
+            <div>
+              <dt>0</dt>
+              <dd>API keys to start</dd>
+            </div>
+            <div>
+              <dt>34</dt>
+              <dd>tests passing</dd>
+            </div>
+            <div>
+              <dt>4</dt>
+              <dd>provider seams</dd>
+            </div>
+            <div>
+              <dt>CI</dt>
+              <dd>ready on push</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="intro section-band">
+        <div class="section-inner intro-layout">
+          <div class="intro-copy reveal">
+            <p class="section-kicker">What it is</p>
+            <h2>One codebase for repeatable short-form channels.</h2>
+            <p>
+              The repo models the work a real content automation system has to survive: client profiles,
+              topic selection, script quality gates, voice synthesis, avatar rendering, upload quotas,
+              metrics, run logs, retries, and provider migration.
+            </p>
+          </div>
+          <div class="feature-list" aria-label="Project strengths">
+            <article class="feature-card reveal">
+              <span>01</span>
+              <h3>Runs without vendors</h3>
+              <p>Stub providers let the whole pipeline run locally before any paid API keys exist.</p>
+            </article>
+            <article class="feature-card reveal">
+              <span>02</span>
+              <h3>Built for clients</h3>
+              <p>Multiple channel profiles can run from the same runtime with separate logs and quotas.</p>
+            </article>
+            <article class="feature-card reveal">
+              <span>03</span>
+              <h3>Designed for failure</h3>
+              <p>Failure simulation, retries, quota checks, and run artifacts make debugging visible.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture" class="section-band architecture">
+        <div class="section-inner">
+          <div class="section-heading reveal">
+            <p class="section-kicker">Architecture</p>
+            <h2>From topic idea to publishable short, with guardrails at every step.</h2>
+          </div>
+          <div class="image-layout">
+            <img
+              class="product-image reveal"
+              src="assets/pipeline-strip.svg"
+              alt="Visual pipeline showing client, script, voice, render, upload, and metrics stages"
+            />
+            <div class="pipeline-steps" aria-label="Pipeline steps">
+              <div class="flow-step is-active" data-flow-step>
+                <strong>Client profile</strong>
+                <span>Load topics, voice, avatar, upload config, and channel limits.</span>
+              </div>
+              <div class="flow-step" data-flow-step>
+                <strong>Script and quality gates</strong>
+                <span>Generate a script, validate the hook, duration, CTA, and word count.</span>
+              </div>
+              <div class="flow-step" data-flow-step>
+                <strong>Render and upload</strong>
+                <span>Submit a render job, poll status, download the video, and upload safely.</span>
+              </div>
+              <div class="flow-step" data-flow-step>
+                <strong>Logs and metrics</strong>
+                <span>Persist run logs, quota usage, job state, and metrics for every client.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="examples" class="section-band examples">
+        <div class="section-inner examples-layout">
+          <div class="section-heading reveal">
+            <p class="section-kicker">Examples</p>
+            <h2>Concrete operator flows, not hand-wavy automation claims.</h2>
+            <p>
+              The CLI is built for the way automation actually gets adopted: start in stubs, validate
+              output locally, inspect health, then switch providers one at a time.
+            </p>
+          </div>
+          <img
+            class="product-image reveal"
+            src="assets/examples-board.svg"
+            alt="Short-form video preview frames with run logs, quotas, and webhook status"
+          />
+          <div class="command-lab reveal" aria-label="Command examples">
+            <div class="command-tabs" role="tablist" aria-label="Example commands">
+              <button class="tab-button is-selected" type="button" data-command="local" aria-selected="true">
+                Local run
+              </button>
+              <button class="tab-button" type="button" data-command="doctor" aria-selected="false">
+                Doctor
+              </button>
+              <button class="tab-button" type="button" data-command="quota" aria-selected="false">
+                Quota
+              </button>
+            </div>
+            <pre class="terminal" aria-live="polite"><code data-command-output>pnpm install
+cp .env.example .env
+cp data/clients.example.json data/clients.json
+pnpm dev -- run --client tech_en_gb_stub</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="proof" class="section-band proof">
+        <div class="section-inner">
+          <div class="section-heading reveal">
+            <p class="section-kicker">What this advertises</p>
+            <h2>The project quietly proves the habits clients are buying.</h2>
+          </div>
+          <div class="proof-grid">
+            <article class="proof-card reveal">
+              <h3>Product thinking</h3>
+              <p>It solves a recognizable business workflow, not a toy problem dressed up as AI.</p>
+            </article>
+            <article class="proof-card reveal">
+              <h3>Engineering judgement</h3>
+              <p>Provider adapters, stubs, schemas, logs, and tests show how you reduce future risk.</p>
+            </article>
+            <article class="proof-card reveal">
+              <h3>Operational taste</h3>
+              <p>Health checks, quotas, and failure simulation make the repo feel ready for real use.</p>
+            </article>
+            <article class="proof-card reveal">
+              <h3>Client empathy</h3>
+              <p>The local-first setup lets someone understand the value before handing over secrets.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-band showcase">
+        <div class="section-inner showcase-layout">
+          <div class="showcase-copy reveal">
+            <p class="section-kicker">Control surface</p>
+            <h2>A project page that looks as deliberate as the code behind it.</h2>
+            <p>
+              The site frames the repo as a modern automation product: visual, clear, operational,
+              and credible enough to send to a prospect without adding a long explanation.
+            </p>
+          </div>
+          <img
+            class="product-image reveal"
+            src="assets/hero-control-room.svg"
+            alt="AI Shorts Agent control room interface with video preview, metrics, jobs, and client channels"
+          />
+        </div>
+      </section>
+
+      <section id="run" class="section-band run">
+        <div class="section-inner run-layout">
+          <div class="run-copy reveal">
+            <p class="section-kicker">Try it</p>
+            <h2>Clone, run, inspect, then go live.</h2>
+            <p>
+              The repo is designed to be approachable on a fresh machine and honest about what still needs
+              real provider implementation before production use.
+            </p>
+          </div>
+          <div class="run-panel reveal">
+            <pre class="terminal terminal-large"><code>git clone https://github.com/PaulJMaddison/ai-shorts-agent.git
+cd ai-shorts-agent
+pnpm install
+cp .env.example .env
+pnpm dev -- doctor
+pnpm dev -- run --client tech_en_gb_stub</code></pre>
+            <a class="button button-primary" href="https://github.com/PaulJMaddison/ai-shorts-agent">Open the repo</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="section-inner footer-inner">
+        <p>AI Shorts Agent. TypeScript automation for short-form content operations.</p>
+        <a href="#top">Back to top</a>
+      </div>
+    </footer>
+
+    <script src="scripts.js"></script>
+  </body>
+</html>

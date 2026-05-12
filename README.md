@@ -8,6 +8,13 @@ This project helps creators, agencies, and product teams launch an AI-powered Sh
 
 This repo is intentionally opinionated about reliability: provider boundaries are explicit, runs are logged, metrics are persisted, failures can be simulated, quotas are enforced, and the core workflow is covered by tests.
 
+## Project website
+
+The client-facing GitHub Pages site lives in `docs/` and is designed to present this repo as a polished software-company case study:
+
+- Live site: https://pauljmaddison.github.io/ai-shorts-agent/
+- Source: `docs/index.html`
+
 ## Why use this project
 
 - Ship faster: start with no API keys and no external dependencies, then progressively connect OpenAI, voice, avatar, and YouTube providers.

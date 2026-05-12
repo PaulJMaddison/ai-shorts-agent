@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+  <title id="title">Shorts automation pipeline stages</title>
+  <desc id="desc">A visual pipeline from client profile to script, voice, avatar render, upload, metrics, and logs.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4fff0"/>
+      <stop offset="1" stop-color="#e4faf5"/>
+    </linearGradient>
+    <filter id="shadow" x="-18%" y="-18%" width="136%" height="136%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#123b2f" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="1400" height="760" rx="42" fill="url(#bg)"/>
+  <path d="M80 560 C220 480 290 618 440 520 C610 408 750 578 920 450 C1060 344 1190 430 1320 330" fill="none" stroke="#123b2f" stroke-opacity="0.12" stroke-width="40" stroke-linecap="round"/>
+  <path d="M80 560 C220 480 290 618 440 520 C610 408 750 578 920 450 C1060 344 1190 430 1320 330" fill="none" stroke="#f05a3c" stroke-width="8" stroke-linecap="round" stroke-dasharray="18 22"/>
+
+  <g filter="url(#shadow)">
+    <g transform="translate(82 135)">
+      <rect width="175" height="160" rx="24" fill="#123b2f"/>
+      <circle cx="44" cy="48" r="18" fill="#c8ff59"/>
+      <text x="28" y="100" fill="#f8fff3" font-family="IBM Plex Mono, Consolas, monospace" font-size="22">01</text>
+      <text x="28" y="132" fill="#f8fff3" font-family="Space Grotesk, sans-serif" font-size="18">Client</text>
+    </g>
+    <g transform="translate(292 265)">
+      <rect width="175" height="160" rx="24" fill="#fff6de"/>
+      <circle cx="44" cy="48" r="18" fill="#f05a3c"/>
+      <text x="28" y="100" fill="#123b2f" font-family="IBM Plex Mono, Consolas, monospace" font-size="22">02</text>
+      <text x="28" y="132" fill="#123b2f" font-family="Space Grotesk, sans-serif" font-size="18">Script</text>
+    </g>
+    <g transform="translate(502 167)">
+      <rect width="175" height="160" rx="24" fill="#d8f5df"/>
+      <circle cx="44" cy="48" r="18" fill="#00a896"/>
+      <text x="28" y="100" fill="#123b2f" font-family="IBM Plex Mono, Consolas, monospace" font-size="22">03</text>
+      <text x="28" y="132" fill="#123b2f" font-family="Space Grotesk, sans-serif" font-size="18">Voice</text>
+    </g>
+    <g transform="translate(712 310)">
+      <rect width="175" height="160" rx="24" fill="#123b2f"/>
+      <circle cx="44" cy="48" r="18" fill="#ffbf69"/>
+      <text x="28" y="100" fill="#f8fff3" font-family="IBM Plex Mono, Consolas, monospace" font-size="22">04</text>
+      <text x="28" y="132" fill="#f8fff3" font-family="Space Grotesk, sans-serif" font-size="18">Render</text>
+    </g>
+    <g transform="translate(922 205)">
+      <rect width="175" height="160" rx="24" fill="#fdd4c7"/>
+      <circle cx="44" cy="48" r="18" fill="#123b2f"/>
+      <text x="28" y="100" fill="#123b2f" font-family="IBM Plex Mono, Consolas, monospace" font-size="22">05</text>
+      <text x="28" y="132" fill="#123b2f" font-family="Space Grotesk, sans-serif" font-size="18">Upload</text>
+    </g>
+    <g transform="translate(1132 352)">
+      <rect width="175" height="160" rx="24" fill="#c8ff59"/>
+      <circle cx="44" cy="48" r="18" fill="#f05a3c"/>
+      <text x="28" y="100" fill="#123b2f" font-family="IBM Plex Mono, Consolas, monospace" font-size="22">06</text>
+      <text x="28" y="132" fill="#123b2f" font-family="Space Grotesk, sans-serif" font-size="18">Metrics</text>
+    </g>
+  </g>
+</svg>
